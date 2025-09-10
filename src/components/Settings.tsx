@@ -208,7 +208,7 @@ export function Settings() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button variant="outline" className="border-gray-600 text-black hover:bg-gray-700 hover:text-white">
+            <button className="border-gray-600 text-black hover:bg-gray-700 hover:text-white">
               Export Data
             </button>
             <button variant="outline" className="border-gray-600 text-black hover:bg-gray-700 hover:text-white">

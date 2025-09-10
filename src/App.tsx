@@ -47,7 +47,11 @@ function AppContent() {
 
   if (!user) {
     return (
-      <Login />
+      <Login 
+        onLogin={() => console.log('Login clicked')} 
+        onRegister={() => console.log('Register clicked')} 
+        onDemo={() => console.log('Demo clicked')} 
+      />
     );
   }
 
