@@ -1,30 +1,48 @@
 import React, { useState } from 'react';
+import { supabase } from '../lib/supabase';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Mail, Lock, User } from 'lucide-react';
 
-interface LoginProps {
-  onLogin: (email: string, password: string) => void;
-  onRegister: (email: string, password: string, name: string) => void;
-  onDemo: () => void;
-}
-
-export function Login({ onLogin, onRegister, onDemo }: LoginProps) {
+export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [activeTab, setActiveTab] = useState('login');
+  const [alert, setAlert] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin(email, password);
+    setLoading(true);
+    setAlert(null);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+    if (error) setAlert(error.message);
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    onRegister(email, password, name);
+    setLoading(true);
+    setAlert(null);
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      setLoading(false);
+      setAlert(error.message);
+      return;
+    }
+    // Create profile row
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .insert([{ id: data.user.id, full_name: name, email }]);
+    setLoading(false);
+    if (profileError) setAlert(profileError.message);
+  };
+
+  const handleDemo = () => {
+    setAlert("Demo mode is not implemented yet.");
   };
 
   return (
@@ -71,6 +89,11 @@ export function Login({ onLogin, onRegister, onDemo }: LoginProps) {
         {/* Login/Register Form */}
         <Card className="bg-gray-800 border-gray-700">
           <CardContent className="p-6">
+            {alert && (
+              <div className="mb-4 p-2 rounded text-center bg-red-900 text-red-300">
+                {alert}
+              </div>
+            )}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 bg-gray-900 mb-6">
                 <TabsTrigger value="login" className="data-[state=active]:bg-gray-700 text-white">
@@ -114,8 +137,9 @@ export function Login({ onLogin, onRegister, onDemo }: LoginProps) {
                   <Button
                     type="submit"
                     className="w-full bg-blue-600 hover:bg-blue-700"
+                    disabled={loading}
                   >
-                    Login
+                    {loading ? 'Logging in...' : 'Login'}
                   </Button>
                 </form>
               </TabsContent>
@@ -167,8 +191,9 @@ export function Login({ onLogin, onRegister, onDemo }: LoginProps) {
                   <Button
                     type="submit"
                     className="w-full bg-blue-600 hover:bg-blue-700"
+                    disabled={loading}
                   >
-                    Create Account
+                    {loading ? 'Creating account...' : 'Create Account'}
                   </Button>
                 </form>
               </TabsContent>
@@ -177,7 +202,7 @@ export function Login({ onLogin, onRegister, onDemo }: LoginProps) {
             {/* Demo Button */}
             <div className="mt-6 pt-6 border-t border-gray-600">
               <Button
-                onClick={onDemo}
+                onClick={handleDemo}
                 variant="outline"
                 className="w-full border-gray-600 text-blue-400 hover:bg-gray-700"
               >

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { AuthProvider, useAuth } from './components/AuthContext';
 import { DataProvider } from './components/DataContext';
 import { Login } from './components/Login';
 import { Navigation } from './components/Navigation';
@@ -9,9 +8,10 @@ import { StorageUnits } from './components/StorageUnits';
 import { FleaTrips } from './components/FleaTrips';
 import { Analytics } from './components/Analytics';
 import { Settings } from './components/Settings';
+import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 
 function AppContent() {
-  const { user, isLoading, login, register, loginDemo } = useAuth();
+  const { user, isLoading } = useSupabaseAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const handleSettingsClick = () => {
@@ -47,11 +47,7 @@ function AppContent() {
 
   if (!user) {
     return (
-      <Login
-        onLogin={login}
-        onRegister={register}
-        onDemo={loginDemo}
-      />
+      <Login />
     );
   }
 
@@ -62,7 +58,6 @@ function AppContent() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
         />
-        
         {/* Main Content */}
         <div className="md:ml-64 min-h-screen">
           {renderActiveComponent()}
@@ -73,9 +68,5 @@ function AppContent() {
 }
 
 export default function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  );
+  return <AppContent />;
 }

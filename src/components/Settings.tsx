@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
+import { Button, buttonVariants } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Switch } from './ui/switch';
 import { Alert, AlertDescription } from './ui/alert';
 import { Settings as SettingsIcon, Link, LogOut, User, Key, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from './AuthContext';
+import { Slot } from "@radix-ui/react-slot";
 
 export function Settings() {
   const { user, logout } = useAuth();
@@ -64,14 +65,14 @@ export function Settings() {
                 </Badge>
               )}
             </div>
-            <Button
+            <button
               onClick={handleLogout}
               variant="outline"
               className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white flex-shrink-0"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Logout
-            </Button>
+            </button>
           </div>
         </CardContent>
       </Card>
@@ -125,13 +126,13 @@ export function Settings() {
                   </ol>
                 </div>
                 
-                <Button
+                <button
                   onClick={handleEbayConnect}
                   disabled={!ebayApiKey.trim()}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   Connect eBay Account
-                </Button>
+                </button>
               </div>
             </>
           ) : (
@@ -149,13 +150,13 @@ export function Settings() {
                     <div className="text-gray-200 font-medium">eBay Account Connected</div>
                     <div className="text-gray-400 text-sm">Last sync: 2 minutes ago</div>
                   </div>
-                  <Button
+                  <button
                     onClick={handleEbayDisconnect}
                     variant="outline"
                     className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
                   >
                     Disconnect
-                  </Button>
+                  </button>
                 </div>
                 
                 <div className="space-y-4">
@@ -186,11 +187,11 @@ export function Settings() {
                   )}
                 </div>
                 
-                <Button
+                <button
                   className="w-full bg-blue-600 hover:bg-blue-700"
                 >
                   Sync Now
-                </Button>
+                </button>
               </div>
             </>
           )}
@@ -207,22 +208,22 @@ export function Settings() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button variant="outline" className="border-gray-600 text-black hover:bg-gray-700 hover:text-white">
+            <button variant="outline" className="border-gray-600 text-black hover:bg-gray-700 hover:text-white">
               Export Data
-            </Button>
-            <Button variant="outline" className="border-gray-600 text-black hover:bg-gray-700 hover:text-white">
+            </button>
+            <button variant="outline" className="border-gray-600 text-black hover:bg-gray-700 hover:text-white">
               Import Data
-            </Button>
+            </button>
           </div>
           
           {!user?.isDemo && (
             <div className="pt-4 border-t border-gray-600">
-              <Button
+              <button
                 variant="outline"
                 className="w-full border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
               >
                 Clear All Data
-              </Button>
+              </button>
               <p className="text-xs text-gray-400 text-center mt-2">
                 This action cannot be undone
               </p>
