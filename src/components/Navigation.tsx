@@ -5,7 +5,8 @@ import {
   Package, 
   Building, 
   MapPin, 
-  BarChart3
+  BarChart3,
+  Settings
 } from 'lucide-react';
 
 interface NavigationProps {
@@ -15,12 +16,14 @@ interface NavigationProps {
 
 export function Navigation({ activeTab, onTabChange }: NavigationProps) {
   const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'inventory', label: 'Inventory', icon: Package },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'storage', label: 'Storage Units', icon: Building },
     { id: 'flea', label: 'Flea Market', icon: MapPin },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   ];
+
+  const settingsTab = { id: 'settings', label: 'Settings', icon: Settings };
 
   return (
     <>
@@ -47,6 +50,22 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
                 </Button>
               );
             })}
+            
+            {/* Settings Button */}
+            <div className="pt-4 border-t border-gray-700 mt-4">
+              <Button
+                variant={activeTab === 'settings' ? "secondary" : "ghost"}
+                className={`w-full justify-start text-left ${
+                  activeTab === 'settings' 
+                    ? "bg-gray-700 text-white" 
+                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                }`}
+                onClick={() => onTabChange('settings')}
+              >
+                <Settings className="w-4 h-4 mr-3" />
+                Settings
+              </Button>
+            </div>
           </nav>
 
         </div>

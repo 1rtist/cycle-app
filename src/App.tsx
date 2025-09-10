@@ -1,42 +1,81 @@
 import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './components/AuthContext';
+import { DataProvider } from './components/DataContext';
+import { Login } from './components/Login';
 import { Navigation } from './components/Navigation';
 import { Dashboard } from './components/Dashboard';
 import { Inventory } from './components/Inventory';
 import { StorageUnits } from './components/StorageUnits';
 import { FleaTrips } from './components/FleaTrips';
 import { Analytics } from './components/Analytics';
+import { Settings } from './components/Settings';
 
-export default function App() {
+function AppContent() {
+  const { user, isLoading, login, register, loginDemo } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  const handleSettingsClick = () => {
+    setActiveTab('settings');
+  };
 
   const renderActiveComponent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onSettingsClick={handleSettingsClick} />;
       case 'inventory':
-        return <Inventory />;
+        return <Inventory onSettingsClick={handleSettingsClick} />;
       case 'storage':
-        return <StorageUnits />;
+        return <StorageUnits onSettingsClick={handleSettingsClick} />;
       case 'flea':
-        return <FleaTrips />;
+        return <FleaTrips onSettingsClick={handleSettingsClick} />;
       case 'analytics':
-        return <Analytics />;
+        return <Analytics onSettingsClick={handleSettingsClick} />;
+      case 'settings':
+        return <Settings />;
       default:
-        return <Dashboard />;
+        return <Dashboard onSettingsClick={handleSettingsClick} />;
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-950">
-      <Navigation 
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
-      
-      {/* Main Content */}
-      <div className="md:ml-64 min-h-screen">
-        {renderActiveComponent()}
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="text-white">Loading...</div>
       </div>
-    </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Login
+        onLogin={login}
+        onRegister={register}
+        onDemo={loginDemo}
+      />
+    );
+  }
+
+  return (
+    <DataProvider>
+      <div className="min-h-screen bg-gray-950">
+        <Navigation 
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+        
+        {/* Main Content */}
+        <div className="md:ml-64 min-h-screen">
+          {renderActiveComponent()}
+        </div>
+      </div>
+    </DataProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

@@ -3,83 +3,56 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
-import { Plus, MapPin, TrendingUp, Package, Calendar } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
+import { DateSelector } from './DateSelector';
+import { Header } from './Header';
+import { AddFleaTripDialog } from './AddFleaTripDialog';
+import { useData } from './DataContext';
+import { Plus, MapPin, TrendingUp, Package, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 
-const fleaTripsData = [
-  {
-    id: 'FM-001',
-    name: 'Rose Bowl Flea Market',
-    date: '2024-02-10',
-    location: 'Pasadena, CA',
-    totalCost: 185.00,
-    totalRevenue: 456.25,
-    totalProfit: 271.25,
-    roi: 146.6,
-    itemsTotal: 12,
-    itemsSold: 9,
-    itemsListed: 2,
-    itemsResearching: 1,
-    status: 'active',
-    entryFee: 15.00,
-    travelCost: 25.00
-  },
-  {
-    id: 'FM-002',
-    name: 'Long Beach Antique Market',
-    date: '2024-02-24',
-    location: 'Long Beach, CA',
-    totalCost: 245.00,
-    totalRevenue: 680.75,
-    totalProfit: 435.75,
-    roi: 177.9,
-    itemsTotal: 15,
-    itemsSold: 11,
-    itemsListed: 4,
-    itemsResearching: 0,
-    status: 'active',
-    entryFee: 10.00,
-    travelCost: 35.00
-  },
-  {
-    id: 'FM-003',
-    name: 'Melrose Trading Post',
-    date: '2024-03-05',
-    location: 'Los Angeles, CA',
-    totalCost: 125.00,
-    totalRevenue: 380.50,
-    totalProfit: 255.50,
-    roi: 204.4,
-    itemsTotal: 8,
-    itemsSold: 7,
-    itemsListed: 1,
-    itemsResearching: 0,
-    status: 'completed',
-    entryFee: 5.00,
-    travelCost: 20.00
-  },
-  {
-    id: 'FM-004',
-    name: 'Santa Monica Flea Market',
-    date: '2024-03-18',
-    location: 'Santa Monica, CA',
-    totalCost: 165.00,
-    totalRevenue: 89.99,
-    totalProfit: -75.01,
-    roi: -45.5,
-    itemsTotal: 6,
-    itemsSold: 2,
-    itemsListed: 3,
-    itemsResearching: 1,
-    status: 'active',
-    entryFee: 8.00,
-    travelCost: 30.00
-  },
-];
+interface FleaTripsProps {
+  onSettingsClick: () => void;
+}
 
-export function FleaTrips() {
+export function FleaTrips({ onSettingsClick }: FleaTripsProps) {
+  const { fleaMarketTrips, inventoryItems } = useData();
   const [sortBy, setSortBy] = useState('roi');
+  const [expandedTrips, setExpandedTrips] = useState<string[]>([]);
 
-  const sortedData = [...fleaTripsData].sort((a, b) => {
+  const toggleExpanded = (tripId: string) => {
+    setExpandedTrips(prev => 
+      prev.includes(tripId) 
+        ? prev.filter(id => id !== tripId)
+        : [...prev, tripId]
+    );
+  };
+
+  // Calculate metrics for each flea market trip based on inventory data
+  const enrichedTrips = fleaMarketTrips.map(trip => {
+    const tripItems = inventoryItems.filter(item => item.sourceId === trip.id);
+    const soldItems = tripItems.filter(item => item.status === 'sold' || item.status === 'shipped');
+    
+    const totalRevenue = soldItems.reduce((sum, item) => sum + (item.sellPrice || 0), 0);
+    const totalInvestment = tripItems.reduce((sum, item) => sum + item.buyPrice, 0);
+    const totalProfit = soldItems.reduce((sum, item) => sum + Math.max(0, item.profit), 0);
+    const roi = totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0;
+    
+    return {
+      ...trip,
+      tripItems,
+      soldItems,
+      totalRevenue,
+      totalInvestment,
+      totalProfit,
+      roi,
+      itemsTotal: tripItems.length,
+      itemsSold: soldItems.length,
+      itemsListed: tripItems.filter(item => item.status === 'listed').length,
+      itemsResearching: tripItems.filter(item => item.status === 'researching').length
+    };
+  });
+
+  const sortedData = [...enrichedTrips].sort((a, b) => {
     switch (sortBy) {
       case 'roi':
         return b.roi - a.roi;
@@ -124,29 +97,21 @@ export function FleaTrips() {
   };
 
   const totalStats = {
-    totalCost: fleaTripsData.reduce((sum, trip) => sum + trip.totalCost, 0),
-    totalRevenue: fleaTripsData.reduce((sum, trip) => sum + trip.totalRevenue, 0),
-    totalProfit: fleaTripsData.reduce((sum, trip) => sum + trip.totalProfit, 0),
-    averageROI: fleaTripsData.reduce((sum, trip) => sum + trip.roi, 0) / fleaTripsData.length,
-    totalTrips: fleaTripsData.length,
+    totalCost: enrichedTrips.reduce((sum, trip) => sum + trip.totalCost, 0),
+    totalRevenue: enrichedTrips.reduce((sum, trip) => sum + trip.totalRevenue, 0),
+    totalProfit: enrichedTrips.reduce((sum, trip) => sum + trip.totalProfit, 0),
+    averageROI: enrichedTrips.length > 0 ? enrichedTrips.reduce((sum, trip) => sum + trip.roi, 0) / enrichedTrips.length : 0,
+    totalTrips: enrichedTrips.length,
   };
 
   return (
     <div className="p-6 space-y-6 bg-gray-950 min-h-screen text-white pb-20 md:pb-6">
-      <div className="flex flex-col">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-semibold text-blue-400">Cycle</h1>
-            <div className="w-px h-6 bg-gray-600"></div>
-            <h2 className="text-2xl font-semibold">Flea Market</h2>
-          </div>
-          <Button className="bg-blue-600 hover:bg-blue-700 mt-4 md:mt-0 hidden md:flex">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Flea Trip
-          </Button>
-        </div>
-        <div className="h-px bg-gray-700 mb-6"></div>
-      </div>
+      <Header title="Flea Market" onSettingsClick={onSettingsClick}>
+        <AddFleaTripDialog />
+      </Header>
+
+      {/* Date Selector */}
+      <DateSelector onDateRangeChange={(range) => console.log('Date range changed:', range)} />
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
@@ -222,7 +187,7 @@ export function FleaTrips() {
               variant={sortBy === 'roi' ? 'secondary' : 'ghost'}
               size="sm"
               onClick={() => setSortBy('roi')}
-              className="text-white"
+              className={sortBy === 'roi' ? 'bg-gray-700 text-white' : 'text-gray-300 hover:text-white'}
             >
               ROI
             </Button>
@@ -230,7 +195,7 @@ export function FleaTrips() {
               variant={sortBy === 'profit' ? 'secondary' : 'ghost'}
               size="sm"
               onClick={() => setSortBy('profit')}
-              className="text-white"
+              className={sortBy === 'profit' ? 'bg-gray-700 text-white' : 'text-gray-300 hover:text-white'}
             >
               Profit
             </Button>
@@ -238,7 +203,7 @@ export function FleaTrips() {
               variant={sortBy === 'date' ? 'secondary' : 'ghost'}
               size="sm"
               onClick={() => setSortBy('date')}
-              className="text-white"
+              className={sortBy === 'date' ? 'bg-gray-700 text-white' : 'text-gray-300 hover:text-white'}
             >
               Date
             </Button>
@@ -247,90 +212,155 @@ export function FleaTrips() {
       </Card>
 
       {/* Flea Trips Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {sortedData.map((trip) => {
-          const soldPercentage = (trip.itemsSold / trip.itemsTotal) * 100;
-          
-          return (
-            <Card key={trip.id} className="bg-gray-800 border-gray-700">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-gray-200">{trip.name}</CardTitle>
-                  <Badge className={`${getStatusColor(trip.status)} text-white capitalize`}>
-                    {trip.status}
-                  </Badge>
-                </div>
-                <p className="text-gray-400 text-sm">Date: {formatDate(trip.date)}</p>
-                <p className="text-gray-400 text-sm">Location: {trip.location}</p>
-                <p className="text-gray-400 text-sm">Trip ID: {trip.id}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Trip Costs Breakdown */}
-                <div className="bg-gray-900 p-3 rounded-lg">
-                  <div className="text-sm text-gray-400 mb-2">Trip Costs</div>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>Entry Fee: {formatCurrency(trip.entryFee)}</div>
-                    <div>Travel: {formatCurrency(trip.travelCost)}</div>
-                    <div>Items: {formatCurrency(trip.totalCost - trip.entryFee - trip.travelCost)}</div>
-                    <div className="font-semibold">Total: {formatCurrency(trip.totalCost)}</div>
+      {sortedData.length === 0 ? (
+        <Card className="bg-gray-800 border-gray-700">
+          <CardContent className="p-8 text-center">
+            <div className="text-gray-400 mb-4">No flea market trips found.</div>
+            <p className="text-gray-500 text-sm">Add your first flea market trip to get started!</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {sortedData.map((trip) => {
+            const soldPercentage = trip.itemsTotal > 0 ? (trip.itemsSold / trip.itemsTotal) * 100 : 0;
+            const isExpanded = expandedTrips.includes(trip.id);
+            
+            return (
+              <Card key={trip.id} className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-gray-200">{trip.name}</CardTitle>
+                    <Badge className={`${getStatusColor('active')} text-white capitalize`}>
+                      active
+                    </Badge>
                   </div>
-                </div>
-
-                {/* Financial Metrics */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-sm text-gray-400">Total Revenue</div>
-                    <div className="text-lg font-semibold text-green-400">{formatCurrency(trip.totalRevenue)}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-400">Total Profit</div>
-                    <div className={`text-lg font-semibold ${trip.totalProfit >= 0 ? 'text-blue-400' : 'text-red-400'}`}>
-                      {formatCurrency(trip.totalProfit)}
+                  <p className="text-gray-400 text-sm">Date: {formatDate(trip.date)}</p>
+                  <p className="text-gray-400 text-sm">Location: {trip.location}</p>
+                  <p className="text-gray-400 text-sm">Trip ID: {trip.id}</p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Trip Costs Breakdown */}
+                  <div className="bg-gray-900 p-3 rounded-lg">
+                    <div className="text-sm text-gray-400 mb-2">Trip Costs</div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="text-gray-400">Entry Fee: {formatCurrency(trip.entryFee)}</div>
+                      <div className="text-gray-400">Travel: {formatCurrency(trip.travelCost)}</div>
+                      <div className="text-gray-400">Items: {formatCurrency(trip.totalSpent)}</div>
+                      <div className="text-gray-400 font-semibold">Total: {formatCurrency(trip.totalCost)}</div>
                     </div>
                   </div>
-                  <div>
-                    <div className="text-sm text-gray-400">ROI</div>
-                    <div className={`text-lg font-semibold ${getROIColor(trip.roi)}`}>
-                      {trip.roi.toFixed(1)}%
+
+                  {/* Financial Metrics */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-sm text-gray-400">Total Revenue</div>
+                      <div className="text-lg font-semibold text-green-400">{formatCurrency(trip.totalRevenue)}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-400">Total Profit</div>
+                      <div className={`text-lg font-semibold ${trip.totalProfit >= 0 ? 'text-blue-400' : 'text-red-400'}`}>
+                        {formatCurrency(trip.totalProfit)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-400">ROI</div>
+                      <div className={`text-lg font-semibold ${getROIColor(trip.roi)}`}>
+                        {trip.roi.toFixed(1)}%
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-400">Avg per Item</div>
+                      <div className="text-lg font-semibold text-yellow-400">
+                        {trip.itemsTotal > 0 ? formatCurrency(trip.totalProfit / trip.itemsTotal) : formatCurrency(0)}
+                      </div>
                     </div>
                   </div>
+
+                  {/* Items Progress */}
                   <div>
-                    <div className="text-sm text-gray-400">Avg per Item</div>
-                    <div className="text-lg font-semibold text-yellow-400">
-                      {formatCurrency(trip.totalProfit / trip.itemsTotal)}
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-gray-400">Items Sold Progress</span>
+                      <span className="text-gray-300">{trip.itemsSold}/{trip.itemsTotal} ({soldPercentage.toFixed(0)}%)</span>
+                    </div>
+                    <Progress value={soldPercentage} className="w-full" />
+                  </div>
+
+                  {/* Item Breakdown */}
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="text-sm text-gray-400">Sold</div>
+                      <div className="text-lg font-semibold text-green-400">{trip.itemsSold}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-400">Listed</div>
+                      <div className="text-lg font-semibold text-blue-400">{trip.itemsListed}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-400">Research</div>
+                      <div className="text-lg font-semibold text-yellow-400">{trip.itemsResearching}</div>
                     </div>
                   </div>
-                </div>
 
-                {/* Items Progress */}
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-400">Items Sold Progress</span>
-                    <span className="text-gray-300">{trip.itemsSold}/{trip.itemsTotal} ({soldPercentage.toFixed(0)}%)</span>
-                  </div>
-                  <Progress value={soldPercentage} className="w-full" />
-                </div>
+                  {/* Expandable Details */}
+                  <Collapsible open={isExpanded} onOpenChange={() => toggleExpanded(trip.id)}>
+                    <CollapsibleTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        className="w-full justify-between text-gray-300 hover:text-white hover:bg-gray-700"
+                      >
+                        View Detailed Breakdown
+                        {isExpanded ? 
+                          <ChevronUp className="w-4 h-4" /> : 
+                          <ChevronDown className="w-4 h-4" />
+                        }
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-4 mt-4">
+                      {trip.notes && (
+                        <div className="bg-gray-900 p-4 rounded-lg">
+                          <h4 className="text-gray-300 font-medium mb-2">Trip Notes</h4>
+                          <p className="text-gray-400 text-sm">{trip.notes}</p>
+                        </div>
+                      )}
 
-                {/* Item Breakdown */}
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <div className="text-sm text-gray-400">Sold</div>
-                    <div className="text-lg font-semibold text-green-400">{trip.itemsSold}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-400">Listed</div>
-                    <div className="text-lg font-semibold text-blue-400">{trip.itemsListed}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-400">Research</div>
-                    <div className="text-lg font-semibold text-yellow-400">{trip.itemsResearching}</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                      {trip.tripItems && trip.tripItems.length > 0 && (
+                        <div className="bg-gray-900 p-4 rounded-lg">
+                          <h4 className="text-gray-300 font-medium mb-3">Items from This Trip</h4>
+                          <div className="space-y-2">
+                            {trip.tripItems.map((item, index) => (
+                              <div key={item.id} className="flex items-center justify-between py-2 border-b border-gray-700 last:border-b-0">
+                                <div className="flex items-center space-x-3">
+                                  <div className={`w-2 h-2 rounded-full ${
+                                    item.status === 'sold' ? 'bg-green-400' : 
+                                    item.status === 'listed' ? 'bg-blue-400' : 'bg-yellow-400'
+                                  }`} />
+                                  <div>
+                                    <div className="text-gray-200 text-sm">{item.title}</div>
+                                    <div className="text-xs text-gray-400 capitalize">{item.status}</div>
+                                  </div>
+                                </div>
+                                <div className="text-right text-sm">
+                                  <div className="text-gray-300">Cost: {formatCurrency(item.buyPrice)}</div>
+                                  {item.sellPrice > 0 && (
+                                    <div className="text-green-400">Sale: {formatCurrency(item.sellPrice)}</div>
+                                  )}
+                                  {item.sellPrice > 0 && (
+                                    <div className="text-blue-400">Profit: {formatCurrency(item.profit)}</div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </CollapsibleContent>
+                  </Collapsible>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
